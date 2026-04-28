@@ -67,7 +67,7 @@ export const HOST_GENOME: Record<string, { hasGenes: string[]; lackPathways: str
     lackPathways: ['MEP途径', 'crtI', 'crtB', 'crtE'],
   },
   'B. subtilis': {
-    hasGenes: ['dxs', 'idi', 'ispA', 'alsS', 'alsD'],
+    hasGenes: ['dxs', 'idi', 'ispA'],
     lackPathways: ['MVA途径'],
   },
 }

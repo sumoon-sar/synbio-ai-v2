@@ -110,22 +110,22 @@ ${dbContext}
   }
 
   // 审核调用
-  const reviewPrompt = `你是合成生物学审稿人。检查以下分析报告，找出明确的错误。
+  const reviewPrompt = `你是合成生物学审稿人。只报告以下四类确定错误，其他一律不报告。
 
-${JSON.stringify(result, null, 2)}
+报告内容（JSON）：
+${JSON.stringify({ metabolicRoute: result.metabolicRoute, keyEnzymes: result.keyEnzymes, engineeringStrategy: result.engineeringStrategy }, null, 2)}
 
-检查项（只报告确定错误，不报告"描述不完整"或"需确认"）：
-1. 酶与反应方向是否匹配（EC编号对应的酶是否真的催化该反应）
-2. 敲除基因是否在宿主中真实存在
-3. 工程策略内部是否有矛盾（如同一基因既敲除又过表达）
-4. 异源酶是否有已知的副活性会消耗目标产物
+四类错误（缺一不报）：
+1. EC编号与所描述反应不符（酶根本不催化该反应，非底物描述不完整）
+2. knockout基因在宿主中不存在
+3. 同一基因同时出现在overexpress和knockout
+4. 异源酶有已知副活性会消耗目标产物
 
-要求：
-- 每条警告不超过25字，直接说明错误
-- 不报告底物描述不完整、步骤可简化、需进一步验证等非错误问题
-- 无确定错误则返回空数组
+禁止报告：反应正确、底物描述不完整、步骤可简化、需验证、accession号问题
 
-只返回JSON数组 []`
+格式：每条≤20字，只说错误本身。无错误返回 []
+
+只返回JSON数组，不含其他文字。`
 
   let warnings: string[] = []
   try {
