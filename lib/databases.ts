@@ -74,7 +74,7 @@ export const HOST_GENOME: Record<string, { hasGenes: string[]; lackPathways: str
 
 export interface DatabaseContext {
   pubchem: { formula: string; weight: string; iupacName: string; synonyms: string[] } | null
-  kegg: { id: string; pathways: string[]; enzymes: string[]; reactions: string[] } | null
+  kegg: { id: string; pathways: string[]; enzymes: string[]; reactions: string[]; reactionDetails: { id: string; equation: string; enzymes: string[] }[] } | null
   uniprot: { accession: string; name: string; organism: string; gene?: string; length?: number; function?: string }[]
   searchedName: string
   hostGenome?: { hasGenes: string[]; lackPathways: string[] }
@@ -125,11 +125,36 @@ async function queryKEGG(name: string): Promise<DatabaseContext['kegg']> {
     const parse = async (r: Response) =>
       r.ok ? (await r.text()).trim().split('\n').map(l => l.split('\t')[1]).filter(Boolean) : []
 
+    const reactions = await parse(rxnRes)
+    const rxnIds = reactions.slice(0, 8).map(r => r.replace('rn:', ''))
+
+    let reactionDetails: { id: string; equation: string; enzymes: string[] }[] = []
+    if (rxnIds.length) {
+      try {
+        const detailRes = await fetch(`https://rest.kegg.jp/get/${rxnIds.join('+')}`, { signal: AbortSignal.timeout(15000) })
+        if (detailRes.ok) {
+          const text = await detailRes.text()
+          const entries = text.split('///').filter(Boolean)
+          reactionDetails = entries.map(entry => {
+            const idMatch = entry.match(/^ENTRY\s+(\S+)/m)
+            const eqMatch = entry.match(/^EQUATION\s+(.+)/m)
+            const ecMatches = [...entry.matchAll(/\[EC:([\d.]+)\]/g)].map(m => m[1])
+            return {
+              id: idMatch?.[1] ?? '',
+              equation: eqMatch?.[1]?.trim() ?? '',
+              enzymes: ecMatches,
+            }
+          }).filter(r => r.id)
+        }
+      } catch { /* non-fatal */ }
+    }
+
     return {
       id,
       pathways: await parse(pwRes),
       enzymes: await parse(ecRes),
-      reactions: await parse(rxnRes),
+      reactions,
+      reactionDetails,
     }
   } catch { return null }
 }

@@ -40,6 +40,12 @@ function buildContext(ctx: DatabaseContext): string {
     lines.push(`KEGG ID: ${ctx.kegg.id}`)
     if (ctx.kegg.enzymes.length) lines.push(`相关酶(EC): ${ctx.kegg.enzymes.slice(0, 8).join(', ')}`)
     if (ctx.kegg.pathways.length) lines.push(`相关通路: ${ctx.kegg.pathways.slice(0, 5).join(', ')}`)
+    if (ctx.kegg.reactionDetails.length) {
+      lines.push(`KEGG反应方程式（用于路径推断，以此为准）:`)
+      ctx.kegg.reactionDetails.forEach(r => {
+        lines.push(`  ${r.id}: ${r.equation}${r.enzymes.length ? ` [EC:${r.enzymes.join('/')}]` : ''}`)
+      })
+    }
   }
   if (ctx.uniprot.length) {
     ctx.uniprot.forEach(e => {
@@ -73,8 +79,8 @@ ${dbContext}
 1. 禁止生成任何DNA序列
 2. 禁止编造不在上述数据库中的EC编号
 3. 代谢路径每步必须标注酶的EC编号和数据来源(KEGG或AI推断)
-4. 工程策略中"敲除"的基因必须存在于宿主内源基因列表中，不存在则不得列入敲除
-5. 宿主缺失的通路/基因需在notes中注明"需异源引入"
+4. 工程策略中"过表达"和"敲除"的基因必须存在于宿主内源基因列表中，不存在则不得列入
+5. 宿主缺失的通路/基因需在notes中注明"需异源引入"，不得列入过表达或敲除
 6. 同一基因不得同时出现在过表达和敲除列表中
 7. 只返回JSON，不含任何其他文字
 
