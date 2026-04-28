@@ -57,11 +57,28 @@ function normalizeName(name: string): string {
   return COMPOUND_MAP[key ?? ''] || trimmed
 }
 
+export const HOST_GENOME: Record<string, { hasGenes: string[]; lackPathways: string[] }> = {
+  'E. coli': {
+    hasGenes: ['dxs', 'idi', 'ispA', 'ispB', 'ispC', 'ispD', 'ispE', 'ispF', 'ispG', 'ispH', 'ldhA', 'fumC', 'pgi', 'zwf'],
+    lackPathways: ['MVA途径', 'crtY', 'crtZ', 'crtW', 'crtS'],
+  },
+  'S. cerevisiae': {
+    hasGenes: ['ERG10', 'ERG13', 'ERG12', 'ERG8', 'ERG19', 'IDI1', 'ERG20', 'HMG1', 'HMG2'],
+    lackPathways: ['MEP途径', 'crtI', 'crtB', 'crtE'],
+  },
+  'B. subtilis': {
+    hasGenes: ['dxs', 'idi', 'ispA', 'alsS', 'alsD'],
+    lackPathways: ['MVA途径'],
+  },
+}
+
 export interface DatabaseContext {
   pubchem: { formula: string; weight: string; iupacName: string; synonyms: string[] } | null
   kegg: { id: string; pathways: string[]; enzymes: string[]; reactions: string[] } | null
   uniprot: { accession: string; name: string; organism: string; gene?: string; length?: number; function?: string }[]
   searchedName: string
+  hostGenome?: { hasGenes: string[]; lackPathways: string[] }
+  literature: { title: string; pmid: string; year: string }[]
 }
 
 async function queryPubChem(name: string): Promise<DatabaseContext['pubchem']> {
@@ -136,10 +153,36 @@ async function queryUniProt(name: string): Promise<DatabaseContext['uniprot']> {
   } catch { return [] }
 }
 
-export async function gatherContext(molecule: string): Promise<DatabaseContext> {
-  const searchedName = normalizeName(molecule)
+async function queryPubMed(query: string): Promise<{ title: string; pmid: string; year: string }[]> {
+  try {
+    const searchRes = await fetch(
+      `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmax=3&retmode=json`,
+      { signal: AbortSignal.timeout(10000) }
+    )
+    if (!searchRes.ok) return []
+    const searchData = await searchRes.json()
+    const pmids: string[] = searchData.esearchresult?.idlist ?? []
+    if (!pmids.length) return []
 
-  // 查缓存
+    const summaryRes = await fetch(
+      `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${pmids.join(',')}&retmode=json`,
+      { signal: AbortSignal.timeout(10000) }
+    )
+    if (!summaryRes.ok) return []
+    const summaryData = await summaryRes.json()
+
+    return pmids.map(id => ({
+      title: summaryData.result[id]?.title ?? 'Unknown',
+      pmid: id,
+      year: summaryData.result[id]?.pubdate?.split(' ')[0] ?? '',
+    }))
+  } catch { return [] }
+}
+
+export async function gatherContext(molecule: string, host?: string): Promise<DatabaseContext> {
+  const searchedName = normalizeName(molecule)
+  const hostGenome = host ? HOST_GENOME[host] : undefined
+
   const db = getSupabaseAdmin() as any
   const { data: cached } = await db
     .from('compound_cache')
@@ -149,15 +192,19 @@ export async function gatherContext(molecule: string): Promise<DatabaseContext> 
 
   if (cached) {
     const age = (Date.now() - new Date(cached.cached_at).getTime()) / 86400000
-    if (age < CACHE_TTL_DAYS) return cached.context
+    if (age < CACHE_TTL_DAYS) {
+      const literature = await queryPubMed(`${searchedName} biosynthesis metabolic engineering`)
+      return { ...cached.context, hostGenome, literature }
+    }
   }
 
-  const [pubchem, kegg, uniprot] = await Promise.all([
+  const [pubchem, kegg, uniprot, literature] = await Promise.all([
     queryPubChem(searchedName),
     queryKEGG(searchedName),
     queryUniProt(searchedName),
+    queryPubMed(`${searchedName} biosynthesis metabolic engineering`),
   ])
-  const ctx: DatabaseContext = { pubchem, kegg, uniprot, searchedName }
+  const ctx: DatabaseContext = { pubchem, kegg, uniprot, searchedName, hostGenome, literature }
 
   try {
     await db

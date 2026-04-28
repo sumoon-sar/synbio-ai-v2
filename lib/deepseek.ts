@@ -46,6 +46,10 @@ function buildContext(ctx: DatabaseContext): string {
       lines.push(`UniProt ${e.accession}: ${e.name} (${e.organism})${e.gene ? ` 基因:${e.gene}` : ''}${e.function ? ` 功能:${e.function.slice(0, 100)}` : ''}`)
     })
   }
+  if (ctx.hostGenome) {
+    lines.push(`\n宿主内源基因: ${ctx.hostGenome.hasGenes.join(', ')}`)
+    lines.push(`宿主缺失通路/基因: ${ctx.hostGenome.lackPathways.join(', ')}`)
+  }
   return lines.join('\n') || '（未找到数据库信息）'
 }
 
@@ -69,7 +73,9 @@ ${dbContext}
 1. 禁止生成任何DNA序列
 2. 禁止编造不在上述数据库中的EC编号
 3. 代谢路径每步必须标注酶的EC编号和数据来源(KEGG或AI推断)
-4. 只返回JSON，不含任何其他文字
+4. 工程策略中"敲除"的基因必须存在于宿主内源基因列表中，不存在则不得列入敲除
+5. 宿主缺失的通路/基因需在notes中注明"需异源引入"
+6. 只返回JSON，不含任何其他文字
 
 返回格式：
 {

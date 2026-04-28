@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
       try {
         send('progress', { step: 'db', message: '正在查询数据库...' })
-        const ctx = await gatherContext(molecule)
+        const ctx = await gatherContext(molecule, host)
 
         send('progress', { step: 'ai', message: 'AI 正在生成分析...' })
         const { result, warnings } = await Promise.race([
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
         send('progress', { step: 'review', message: 'AI 审核完成' })
 
-        const analysisResult = { molecule, host, ...result, reviewWarnings: warnings }
+        const analysisResult = { molecule, host, ...result, reviewWarnings: warnings, literature: ctx.literature }
         await supabase.from('analysis_history').insert({ user_id: user.id, molecule, host, result: analysisResult })
 
         send('done', { result: analysisResult })

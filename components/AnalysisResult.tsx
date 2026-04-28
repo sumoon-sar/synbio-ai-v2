@@ -104,6 +104,20 @@ ${result.reviewWarnings.length ? `<h2>审核警告</h2>${result.reviewWarnings.m
           ))}
         </Section>
       )}
+
+      {result.literature && result.literature.length > 0 && (
+        <Section title="相关文献">
+          <ul className="space-y-2">
+            {result.literature.map((p) => (
+              <li key={p.pmid} className="text-sm">
+                <a href={`https://pubmed.ncbi.nlm.nih.gov/${p.pmid}`} target="_blank" rel="noreferrer"
+                  className="text-cyan-600 hover:underline">{p.title}</a>
+                {p.year && <span className="text-gray-400 ml-2">({p.year})</span>}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
     </div>
   )
 }

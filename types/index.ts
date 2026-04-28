@@ -32,6 +32,7 @@ export interface AnalysisResult {
   }
   reviewWarnings: string[]
   rawAnalysis: string
+  literature?: { title: string; pmid: string; year: string }[]
 }
 
 export interface HistoryItem {
