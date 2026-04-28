@@ -1,9 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return _supabaseAdmin
+}
 
 const CACHE_TTL_DAYS = 7
 
@@ -134,15 +140,16 @@ export async function gatherContext(molecule: string): Promise<DatabaseContext> 
   const searchedName = normalizeName(molecule)
 
   // 查缓存
-  const { data: cached } = await supabaseAdmin
+  const db = getSupabaseAdmin() as any
+  const { data: cached } = await db
     .from('compound_cache')
     .select('context, cached_at')
     .eq('name', searchedName)
-    .single()
+    .single() as { data: { context: DatabaseContext; cached_at: string } | null }
 
   if (cached) {
     const age = (Date.now() - new Date(cached.cached_at).getTime()) / 86400000
-    if (age < CACHE_TTL_DAYS) return cached.context as DatabaseContext
+    if (age < CACHE_TTL_DAYS) return cached.context
   }
 
   const [pubchem, kegg, uniprot] = await Promise.all([
@@ -153,7 +160,7 @@ export async function gatherContext(molecule: string): Promise<DatabaseContext> 
   const ctx: DatabaseContext = { pubchem, kegg, uniprot, searchedName }
 
   try {
-    await supabaseAdmin
+    await db
       .from('compound_cache')
       .upsert({ name: searchedName, context: ctx, cached_at: new Date().toISOString() })
   } catch { /* cache write failure is non-fatal */ }
