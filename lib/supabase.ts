@@ -1,14 +1,20 @@
 import { createBrowserClient } from '@supabase/ssr'
 
+let _client: ReturnType<typeof createBrowserClient> | null = null
+
 export function getSupabase() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  if (!_client) {
+    _client = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  }
+  return _client
 }
 
-// Singleton for client components
-let _client: ReturnType<typeof createBrowserClient> | null = null
-export const supabase = typeof window !== 'undefined'
-  ? (_client ??= getSupabase())
-  : ({} as ReturnType<typeof createBrowserClient>)
+// For use in client components only
+export const supabase = new Proxy({} as ReturnType<typeof createBrowserClient>, {
+  get(_, prop) {
+    return (getSupabase() as any)[prop]
+  }
+})
