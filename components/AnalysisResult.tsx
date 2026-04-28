@@ -110,7 +110,7 @@ ${result.reviewWarnings.length ? `<h2>审核警告</h2>${result.reviewWarnings.m
           <ul className="space-y-2">
             {result.literature.map((p) => (
               <li key={p.pmid} className="text-sm">
-                <a href={`https://pubmed.ncbi.nlm.nih.gov/${p.pmid}`} target="_blank" rel="noreferrer"
+                <a href={`https://scholar.google.com/scholar?q=${encodeURIComponent(p.title)}`} target="_blank" rel="noreferrer"
                   className="text-cyan-600 hover:underline">{p.title}</a>
                 {p.year && <span className="text-gray-400 ml-2">({p.year})</span>}
               </li>
