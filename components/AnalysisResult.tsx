@@ -7,27 +7,31 @@ interface Props {
 
 export default function AnalysisResult({ result }: Props) {
   const exportReport = () => {
-    const esc = (s: string) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>SynBio AI - ${esc(result.molecule)}</title>
+    try {
+      const esc = (s: string) => (s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>SynBio AI - ${esc(result.molecule)}</title>
 <style>body{font-family:system-ui;margin:40px;color:#1e293b;line-height:1.6}h1{color:#0891b2}h2{color:#0e7490;margin-top:2rem}table{width:100%;border-collapse:collapse}td,th{border:1px solid #e2e8f0;padding:8px;text-align:left}th{background:#f0f9ff}.warn{background:#fef3c7;padding:8px;border-radius:4px;margin:4px 0}</style>
 </head><body>
 <h1>SynBio AI 分析报告</h1>
 <p><strong>目标产物：</strong>${esc(result.molecule)} &nbsp; <strong>宿主：</strong>${esc(result.host)}</p>
 ${result.structureInfo ? `<h2>结构信息</h2><p>分子式：${esc(result.structureInfo.formula)}，分子量：${esc(result.structureInfo.weight)}</p><p>IUPAC：${esc(result.structureInfo.iupacName)}</p>` : ''}
-<h2>代谢路径</h2><ol>${result.metabolicRoute.map(r => `<li>${esc(r.step)} <em>(${esc(r.enzyme)}, ${esc(r.source)})</em></li>`).join('')}</ol>
-<h2>关键酶</h2><table><tr><th>名称</th><th>基因</th><th>物种</th><th>功能</th></tr>${result.keyEnzymes.map(e => `<tr><td>${esc(e.name)}</td><td>${esc(e.gene)}</td><td>${esc(e.organism)}</td><td>${esc(e.function)}</td></tr>`).join('')}</table>
-<h2>工程策略</h2><p><strong>过表达：</strong>${esc(result.engineeringStrategy.overexpress.join(', '))}</p><p><strong>敲除：</strong>${esc(result.engineeringStrategy.knockout.join(', '))}</p><p><strong>辅因子：</strong>${esc(result.engineeringStrategy.cofactors.join(', '))}</p><p>${esc(result.engineeringStrategy.notes)}</p>
+<h2>代谢路径</h2><ol>${(result.metabolicRoute ?? []).map(r => `<li>${esc(r.step)} <em>(${esc(r.enzyme)}, ${esc(r.source)})</em></li>`).join('')}</ol>
+<h2>关键酶</h2><table><tr><th>名称</th><th>基因</th><th>物种</th><th>功能</th></tr>${(result.keyEnzymes ?? []).map(e => `<tr><td>${esc(e.name)}</td><td>${esc(e.gene)}</td><td>${esc(e.organism)}</td><td>${esc(e.function)}</td></tr>`).join('')}</table>
+<h2>工程策略</h2><p><strong>过表达：</strong>${esc((result.engineeringStrategy?.overexpress ?? []).join(', '))}</p><p><strong>敲除：</strong>${esc((result.engineeringStrategy?.knockout ?? []).join(', '))}</p><p><strong>辅因子：</strong>${esc((result.engineeringStrategy?.cofactors ?? []).join(', '))}</p><p>${esc(result.engineeringStrategy?.notes ?? '')}</p>
 <h2>AI 分析报告</h2><pre style="white-space:pre-wrap;background:#f8fafc;padding:1rem;border-radius:8px">${esc(result.rawAnalysis)}</pre>
-${result.reviewWarnings.length ? `<h2>审核警告</h2>${result.reviewWarnings.map(w => `<div class="warn">⚠️ ${esc(w)}</div>`).join('')}` : ''}
+${(result.reviewWarnings ?? []).length ? `<h2>审核警告</h2>${result.reviewWarnings.map(w => `<div class="warn">⚠️ ${esc(w)}</div>`).join('')}` : ''}
 </body></html>`
-    const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `SynBio-${result.molecule}-${new Date().toISOString().split('T')[0]}.html`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 100)
+      const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `SynBio-${result.molecule}-${new Date().toISOString().split('T')[0]}.html`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 100)
+    } catch (e) {
+      alert('导出失败: ' + (e as Error).message)
+    }
   }
 
   return (
