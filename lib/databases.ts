@@ -297,7 +297,7 @@ async function queryUniProt(name: string): Promise<DatabaseContext['uniprot']> {
     return (data.results ?? [])
       .filter((r: any) => {
         const name = r.proteinDescription?.recommendedName?.fullName?.value ?? ''
-        return !/(transport|permease|binding protein|ABC)/i.test(name)
+        return !/(transport|permease|binding protein|ABC|tRNA|ligase|methyltransferase(?!.*synthase))/i.test(name)
       })
       .slice(0, 3)
       .map((r: any) => ({
@@ -351,7 +351,7 @@ export async function gatherContext(molecule: string, host?: string): Promise<Da
   if (cached) {
     const age = (Date.now() - new Date(cached.cached_at).getTime()) / 86400000
     if (age < CACHE_TTL_DAYS) {
-      const literature = await queryPubMed(`${searchedName} biosynthesis metabolic engineering`)
+      const literature = await queryPubMed(`${searchedName}[Title/Abstract] AND (biosynthesis OR "metabolic engineering")[Title/Abstract]`)
       return { ...cached.context, hostGenome, precursorHint, forbiddenGenes, literature }
     }
   }
@@ -360,7 +360,7 @@ export async function gatherContext(molecule: string, host?: string): Promise<Da
     queryPubChem(searchedName),
     queryKEGG(searchedName),
     queryUniProt(searchedName),
-    queryPubMed(`${searchedName} biosynthesis metabolic engineering`),
+    queryPubMed(`${searchedName}[Title/Abstract] AND (biosynthesis OR "metabolic engineering")[Title/Abstract]`),
   ])
   const ctx: DatabaseContext = { pubchem, kegg, uniprot, searchedName, precursorHint, forbiddenGenes, hostGenome, literature }
 
