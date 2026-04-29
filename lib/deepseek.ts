@@ -109,6 +109,30 @@ ${dbContext}
     throw new Error('AI 返回 JSON 解析失败')
   }
 
+  // 数据清洗：确保所有字段类型正确
+  if (result.structureInfo) {
+    result.structureInfo.synonyms = Array.isArray(result.structureInfo.synonyms) ? result.structureInfo.synonyms : []
+  }
+  result.metabolicRoute = (result.metabolicRoute ?? []).map(r => ({
+    step: String(r.step ?? ''),
+    enzyme: String(r.enzyme ?? ''),
+    source: String(r.source ?? ''),
+  }))
+  result.keyEnzymes = (result.keyEnzymes ?? []).map(e => ({
+    name: String(e.name ?? ''),
+    gene: String(e.gene ?? ''),
+    organism: String(e.organism ?? ''),
+    accession: String(e.accession ?? ''),
+    function: String(e.function ?? ''),
+  }))
+  if (result.engineeringStrategy) {
+    result.engineeringStrategy.overexpress = Array.isArray(result.engineeringStrategy.overexpress) ? result.engineeringStrategy.overexpress.map(String) : []
+    result.engineeringStrategy.knockout = Array.isArray(result.engineeringStrategy.knockout) ? result.engineeringStrategy.knockout.map(String) : []
+    result.engineeringStrategy.cofactors = Array.isArray(result.engineeringStrategy.cofactors) ? result.engineeringStrategy.cofactors.map(String) : []
+    result.engineeringStrategy.notes = String(result.engineeringStrategy.notes ?? '')
+  }
+  result.rawAnalysis = String(result.rawAnalysis ?? '')
+
   // 用数据库数据补充 structureInfo
   if (ctx.pubchem && !result.structureInfo?.formula) {
     result.structureInfo = {

@@ -52,8 +52,8 @@ ${(result.reviewWarnings ?? []).length ? `<h2>审核警告</h2>${result.reviewWa
             <Info label="分子式" value={result.structureInfo.formula} />
             <Info label="分子量" value={result.structureInfo.weight} />
             <Info label="IUPAC" value={result.structureInfo.iupacName} />
-            {result.structureInfo.synonyms.length > 0 && (
-              <Info label="同义词" value={result.structureInfo.synonyms.join(', ')} />
+            {(result.structureInfo.synonyms ?? []).length > 0 && (
+              <Info label="同义词" value={(result.structureInfo.synonyms ?? []).join(', ')} />
             )}
           </div>
         </Section>
