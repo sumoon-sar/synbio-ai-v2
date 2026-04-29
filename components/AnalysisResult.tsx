@@ -24,7 +24,9 @@ ${result.reviewWarnings.length ? `<h2>审核警告</h2>${result.reviewWarnings.m
     const a = document.createElement('a')
     a.href = url
     a.download = `SynBio-${result.molecule}-${new Date().toISOString().split('T')[0]}.html`
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     setTimeout(() => URL.revokeObjectURL(url), 100)
   }
 
