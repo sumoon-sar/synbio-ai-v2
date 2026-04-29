@@ -98,7 +98,7 @@ const COMPOUND_MAP: Record<string, CompoundEntry> = {
   '维生素B2': { en: 'riboflavin', precursor: 'amino_acid' },
   '维生素B12': { en: 'cobalamin', precursor: 'amino_acid' },
   // 含硫氨基酸衍生物 — 前体 组氨酸/半胱氨酸
-  '麦角硫因': { en: 'ergothioneine', precursor: 'amino_acid', hint: '前体为L-组氨酸和S-腺苷甲硫氨酸（SAM），只过表达组氨酸合成相关基因（hisG,hisD,hisB,hisH,hisA,hisF,hisI）和SAM合成基因（metK），禁止过表达MEP途径(dxs,idi,isp*)基因', forbiddenGenes: ['dxs','idi','ispA','ispB','ispC','ispD','ispE','ispF','ispG','ispH','pgi','zwf'] },
+  '麦角硫因': { en: 'ergothioneine', precursor: 'amino_acid', hint: '前体为L-组氨酸和S-腺苷甲硫氨酸（SAM），只过表达组氨酸合成相关基因（hisG,hisD,hisB,hisH,hisA,hisF,hisI）和SAM合成基因（metK），禁止过表达MEP途径(dxs,idi,isp*)基因。关键酶必须使用Mycobacterium smegmatis的egtD（EC 2.1.1.44）、egtB（EC 2.5.1.112）、egtE（EC 4.4.1.36）三步合成路径，禁止使用其他物种的转运蛋白替代合成酶', forbiddenGenes: ['dxs','idi','ispA','ispB','ispC','ispD','ispE','ispF','ispG','ispH','pgi','zwf'] },
   '谷胱甘肽': { en: 'glutathione', precursor: 'amino_acid' },
   // 聚酮/脂肪酸衍生物
   '脂肪酸': { en: 'fatty acid', precursor: 'organic_acid' },
