@@ -132,16 +132,63 @@ function normalizeName(name: string): { en: string; precursorHint?: string; forb
 
 export const HOST_GENOME: Record<string, { hasGenes: string[]; lackPathways: string[] }> = {
   'E. coli': {
-    hasGenes: ['dxs', 'idi', 'ispA', 'ispB', 'ispC', 'ispD', 'ispE', 'ispF', 'ispG', 'ispH', 'ldhA', 'fumC', 'pgi', 'zwf'],
+    hasGenes: [
+      // MEP途径
+      'dxs', 'idi', 'ispA', 'ispB', 'ispC', 'ispD', 'ispE', 'ispF', 'ispG', 'ispH',
+      // 糖代谢/NADPH
+      'pgi', 'zwf', 'gnd', 'tktA', 'tktB', 'talB',
+      // TCA途径
+      'sdhA', 'sdhB', 'sdhC', 'sdhD', 'fumA', 'fumB', 'fumC', 'mdh', 'sucA', 'sucB', 'sucC', 'sucD', 'icd', 'acnA', 'acnB',
+      // 糖酵解/丙酮酸
+      'ppc', 'pck', 'pykA', 'pykF', 'ldhA', 'pta', 'ackA',
+      // 莽草酸途径
+      'aroG', 'aroB', 'aroD', 'aroE', 'aroK', 'aroA', 'aroC', 'pheA', 'tyrA', 'trpE', 'trpD', 'trpC', 'trpB', 'trpA',
+      // 组氨酸合成
+      'hisG', 'hisD', 'hisB', 'hisH', 'hisA', 'hisF', 'hisI', 'hisC', 'hisE',
+      // SAM/甲硫氨酸
+      'metK', 'metA', 'metB', 'metC', 'metE', 'metH',
+      // 赖氨酸/天冬氨酸族
+      'lysA', 'lysC', 'asd', 'dapA', 'dapB', 'dapD', 'dapE', 'dapF',
+      // 脂肪酸
+      'fabB', 'fabF', 'fabH', 'fabI', 'fabZ', 'fabA', 'fabD', 'fabG',
+      // 辅因子
+      'ubiA', 'ubiC', 'ubiD', 'ubiE', 'ubiF', 'ubiG', 'ubiH',
+    ],
     lackPathways: ['MVA途径', 'crtY', 'crtZ', 'crtW', 'crtS'],
   },
   'S. cerevisiae': {
-    hasGenes: ['ERG10', 'ERG13', 'ERG12', 'ERG8', 'ERG19', 'IDI1', 'ERG20', 'HMG1', 'HMG2'],
+    hasGenes: [
+      // MVA途径
+      'ERG10', 'ERG13', 'ERG12', 'ERG8', 'ERG19', 'IDI1', 'ERG20', 'HMG1', 'HMG2',
+      // 类固醇/萜类
+      'ERG1', 'ERG2', 'ERG3', 'ERG4', 'ERG5', 'ERG6', 'ERG7', 'ERG9', 'ERG11', 'ERG24', 'ERG25', 'ERG26', 'ERG27',
+      // 莽草酸途径
+      'ARO1', 'ARO2', 'ARO3', 'ARO4', 'ARO7', 'ARO8', 'ARO9', 'TRP1', 'TRP2', 'TRP3', 'TRP4', 'TRP5',
+      // 糖酵解/TCA
+      'PYK1', 'PYK2', 'PDC1', 'PDC5', 'PDC6', 'ADH1', 'ADH2', 'CIT1', 'ACO1', 'IDH1', 'IDH2', 'KGD1', 'KGD2',
+      // 脂肪酸
+      'FAS1', 'FAS2', 'ACC1',
+      // 辅因子
+      'MET6', 'SAM1', 'SAM2',
+    ],
     lackPathways: ['MEP途径', 'crtI', 'crtB', 'crtE'],
   },
   'B. subtilis': {
-    hasGenes: ['dxs', 'idi', 'ispA'],
-    lackPathways: ['MVA途径'],
+    hasGenes: [
+      // MEP途径
+      'dxs', 'idi', 'ispA',
+      // MVA途径（B. subtilis有完整MVA途径）
+      'mvaA', 'mvaS', 'mvaK1', 'mvaK2', 'mvaD', 'mvaE',
+      // 莽草酸途径
+      'aroA', 'aroB', 'aroC', 'aroD', 'aroE', 'aroF', 'aroG', 'aroH',
+      // TCA途径
+      'citA', 'citB', 'icd', 'odhA', 'odhB', 'sdhA', 'sdhB', 'sdhC', 'fumC', 'mdh',
+      // 糖酵解
+      'pgi', 'pfkA', 'fbaA', 'tpiA', 'gapA', 'pgk', 'pgm', 'eno', 'pykA',
+      // 脂肪酸
+      'fabHA', 'fabHB', 'fabI', 'fabF', 'fabG',
+    ],
+    lackPathways: ['crtY', 'crtZ', 'crtW', 'crtS', 'crtI', 'crtB', 'crtE'],
   },
 }
 
