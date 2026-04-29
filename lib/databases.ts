@@ -95,6 +95,12 @@ const COMPOUND_MAP: Record<string, CompoundEntry> = {
   '维生素C': { en: 'ascorbic acid', precursor: 'amino_acid' },
   '维生素B2': { en: 'riboflavin', precursor: 'amino_acid' },
   '维生素B12': { en: 'cobalamin', precursor: 'amino_acid' },
+  // 含硫氨基酸衍生物 — 前体 组氨酸/半胱氨酸
+  '麦角硫因': { en: 'ergothioneine', precursor: 'amino_acid' },
+  '谷胱甘肽': { en: 'glutathione', precursor: 'amino_acid' },
+  // 聚酮/脂肪酸衍生物
+  '脂肪酸': { en: 'fatty acid', precursor: 'organic_acid' },
+  '己内酰胺': { en: 'caprolactam', precursor: 'organic_acid' },
   // 其他
   '紫草素': { en: 'shikonin', precursor: 'other' },
   '人参皂苷': { en: 'ginsenoside', precursor: 'terpenoid' },
