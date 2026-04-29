@@ -26,7 +26,7 @@ const COMPOUND_MAP: Record<string, CompoundEntry> = {
   // 萜类 — 前体 IPP/DMAPP (MEP/MVA途径)
   '番茄红素': { en: 'lycopene', precursor: 'terpenoid' },
   '青蒿素': { en: 'artemisinin', precursor: 'terpenoid' },
-  '虾青素': { en: 'astaxanthin', precursor: 'terpenoid' },
+  '虾青素': { en: 'astaxanthin', precursor: 'terpenoid', hint: '前体为IPP/DMAPP（萜类），相关内源基因为MEP途径(dxs,idi,ispA等)。关键异源酶：crtW（β-胡萝卜素酮化酶，推荐来自Brevundimonas vesicularis）、crtZ（β-胡萝卜素羟化酶，推荐来自Pantoea ananatis）、crtYB（番茄红素环化酶/八氢番茄红素合酶，推荐来自Phaffia rhodozyma）' },
   '紫杉醇': { en: 'paclitaxel', precursor: 'terpenoid' },
   '胡萝卜素': { en: 'beta-carotene', precursor: 'terpenoid' },
   'β-胡萝卜素': { en: 'beta-carotene', precursor: 'terpenoid' },
