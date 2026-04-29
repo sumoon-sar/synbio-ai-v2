@@ -116,7 +116,7 @@ ${dbContext}
   result.metabolicRoute = (result.metabolicRoute ?? []).map(r => ({
     step: String(r.step ?? ''),
     enzyme: String(r.enzyme ?? ''),
-    source: String(r.source ?? ''),
+    source: (String(r.source ?? '') as 'KEGG' | 'AI') || 'AI',
   }))
   result.keyEnzymes = (result.keyEnzymes ?? []).map(e => ({
     name: String(e.name ?? ''),
