@@ -19,6 +19,7 @@ interface CompoundEntry {
   en: string
   precursor: PrecursorType
   hint?: string
+  forbiddenGenes?: string[]
 }
 
 const COMPOUND_MAP: Record<string, CompoundEntry> = {
@@ -97,7 +98,7 @@ const COMPOUND_MAP: Record<string, CompoundEntry> = {
   '维生素B2': { en: 'riboflavin', precursor: 'amino_acid' },
   '维生素B12': { en: 'cobalamin', precursor: 'amino_acid' },
   // 含硫氨基酸衍生物 — 前体 组氨酸/半胱氨酸
-  '麦角硫因': { en: 'ergothioneine', precursor: 'amino_acid', hint: '前体为L-组氨酸和S-腺苷甲硫氨酸（SAM），只过表达组氨酸合成相关基因（hisG,hisD,hisB,hisH,hisA,hisF,hisI）和SAM合成基因（metK），禁止过表达MEP途径(dxs,idi,isp*)基因' },
+  '麦角硫因': { en: 'ergothioneine', precursor: 'amino_acid', hint: '前体为L-组氨酸和S-腺苷甲硫氨酸（SAM），只过表达组氨酸合成相关基因（hisG,hisD,hisB,hisH,hisA,hisF,hisI）和SAM合成基因（metK），禁止过表达MEP途径(dxs,idi,isp*)基因', forbiddenGenes: ['dxs','idi','ispA','ispB','ispC','ispD','ispE','ispF','ispG','ispH','pgi','zwf'] },
   '谷胱甘肽': { en: 'glutathione', precursor: 'amino_acid' },
   // 聚酮/脂肪酸衍生物
   '脂肪酸': { en: 'fatty acid', precursor: 'organic_acid' },
@@ -119,13 +120,13 @@ const PRECURSOR_HINT: Record<PrecursorType, string> = {
   other: '根据KEGG数据判断前体类型，只过表达与目标产物合成直接相关的基因',
 }
 
-function normalizeName(name: string): { en: string; precursorHint?: string } {
+function normalizeName(name: string): { en: string; precursorHint?: string; forbiddenGenes?: string[] } {
   const trimmed = name.trim()
   const entry = COMPOUND_MAP[trimmed]
-  if (entry) return { en: entry.en, precursorHint: entry.hint ?? PRECURSOR_HINT[entry.precursor] }
+  if (entry) return { en: entry.en, precursorHint: entry.hint ?? PRECURSOR_HINT[entry.precursor], forbiddenGenes: entry.forbiddenGenes }
   const lower = trimmed.toLowerCase()
   const key = Object.keys(COMPOUND_MAP).find(k => lower.includes(k.toLowerCase()))
-  if (key) return { en: COMPOUND_MAP[key].en, precursorHint: PRECURSOR_HINT[COMPOUND_MAP[key].precursor] }
+  if (key) return { en: COMPOUND_MAP[key].en, precursorHint: PRECURSOR_HINT[COMPOUND_MAP[key].precursor], forbiddenGenes: COMPOUND_MAP[key].forbiddenGenes }
   return { en: trimmed }
 }
 
@@ -150,6 +151,7 @@ export interface DatabaseContext {
   uniprot: { accession: string; name: string; organism: string; gene?: string; length?: number; function?: string }[]
   searchedName: string
   precursorHint?: string
+  forbiddenGenes?: string[]
   hostGenome?: { hasGenes: string[]; lackPathways: string[] }
   literature: { title: string; pmid: string; year: string }[]
 }
@@ -278,7 +280,7 @@ async function queryPubMed(query: string): Promise<{ title: string; pmid: string
 }
 
 export async function gatherContext(molecule: string, host?: string): Promise<DatabaseContext> {
-  const { en: searchedName, precursorHint } = normalizeName(molecule)
+  const { en: searchedName, precursorHint, forbiddenGenes } = normalizeName(molecule)
   const hostGenome = host ? HOST_GENOME[host] : undefined
 
   const db = getSupabaseAdmin() as any
@@ -292,7 +294,7 @@ export async function gatherContext(molecule: string, host?: string): Promise<Da
     const age = (Date.now() - new Date(cached.cached_at).getTime()) / 86400000
     if (age < CACHE_TTL_DAYS) {
       const literature = await queryPubMed(`${searchedName} biosynthesis metabolic engineering`)
-      return { ...cached.context, hostGenome, precursorHint, literature }
+      return { ...cached.context, hostGenome, precursorHint, forbiddenGenes, literature }
     }
   }
 
@@ -302,7 +304,7 @@ export async function gatherContext(molecule: string, host?: string): Promise<Da
     queryUniProt(searchedName),
     queryPubMed(`${searchedName} biosynthesis metabolic engineering`),
   ])
-  const ctx: DatabaseContext = { pubchem, kegg, uniprot, searchedName, precursorHint, hostGenome, literature }
+  const ctx: DatabaseContext = { pubchem, kegg, uniprot, searchedName, precursorHint, forbiddenGenes, hostGenome, literature }
 
   try {
     await db

@@ -144,13 +144,18 @@ ${JSON.stringify({ metabolicRoute: result.metabolicRoute, keyEnzymes: result.key
     if (arrMatch) warnings = JSON.parse(arrMatch[0])
   } catch { /* 审核失败不影响主结果 */ }
 
-  // 服务端强制过滤：过表达/敲除只能包含宿主内源基因
-  if (ctx.hostGenome) {
-    const { hasGenes } = ctx.hostGenome
+  // 服务端强制过滤：过表达/敲除只能包含宿主内源基因，且不能包含化合物禁止基因
+  if (ctx.hostGenome || ctx.forbiddenGenes) {
+    const hasGenes = ctx.hostGenome?.hasGenes ?? []
+    const forbidden = new Set(ctx.forbiddenGenes ?? [])
     const s = result.engineeringStrategy
     if (s) {
-      s.overexpress = (s.overexpress ?? []).filter((g: string) => hasGenes.includes(g))
-      s.knockout = (s.knockout ?? []).filter((g: string) => hasGenes.includes(g))
+      s.overexpress = (s.overexpress ?? []).filter((g: string) =>
+        (!hasGenes.length || hasGenes.includes(g)) && !forbidden.has(g)
+      )
+      s.knockout = (s.knockout ?? []).filter((g: string) =>
+        (!hasGenes.length || hasGenes.includes(g)) && !forbidden.has(g)
+      )
     }
   }
 
