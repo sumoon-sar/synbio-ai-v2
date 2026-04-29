@@ -283,20 +283,27 @@ async function queryKEGG(name: string): Promise<DatabaseContext['kegg']> {
 
 async function queryUniProt(name: string): Promise<DatabaseContext['uniprot']> {
   try {
+    const query = `${name} biosynthesis NOT transport NOT permease NOT transporter`
     const res = await fetch(
-      `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(name)}&format=json&size=3`,
+      `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(query)}&format=json&size=5`,
       { signal: AbortSignal.timeout(10000) }
     )
     if (!res.ok) return []
     const data = await res.json()
-    return (data.results ?? []).map((r: any) => ({
-      accession: r.primaryAccession,
-      name: r.proteinDescription?.recommendedName?.fullName?.value ?? 'Unknown',
-      organism: r.organism?.scientificName ?? 'Unknown',
-      gene: r.genes?.[0]?.geneName?.value,
-      length: r.sequence?.length,
-      function: r.comments?.find((c: any) => c.commentType === 'FUNCTION')?.text?.[0]?.value,
-    }))
+    return (data.results ?? [])
+      .filter((r: any) => {
+        const name = r.proteinDescription?.recommendedName?.fullName?.value ?? ''
+        return !/(transport|permease|binding protein|ABC)/i.test(name)
+      })
+      .slice(0, 3)
+      .map((r: any) => ({
+        accession: r.primaryAccession,
+        name: r.proteinDescription?.recommendedName?.fullName?.value ?? 'Unknown',
+        organism: r.organism?.scientificName ?? 'Unknown',
+        gene: r.genes?.[0]?.geneName?.value,
+        length: r.sequence?.length,
+        function: r.comments?.find((c: any) => c.commentType === 'FUNCTION')?.text?.[0]?.value,
+      }))
   } catch { return [] }
 }
 
