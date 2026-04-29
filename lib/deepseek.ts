@@ -168,7 +168,10 @@ ${JSON.stringify({ metabolicRoute: result.metabolicRoute, keyEnzymes: result.key
   try {
     const reviewRaw = await callDeepSeek(reviewPrompt)
     const arrMatch = reviewRaw.match(/\[[\s\S]*\]/)
-    if (arrMatch) warnings = JSON.parse(arrMatch[0])
+    if (arrMatch) {
+      const parsed: string[] = JSON.parse(arrMatch[0])
+      warnings = parsed.filter(w => !/(无重复|无相同|无错误|没有错误|列表中无)/i.test(w))
+    }
   } catch { /* 审核失败不影响主结果 */ }
 
   // 服务端强制过滤：过表达/敲除只能包含宿主内源基因，且不能包含化合物禁止基因
