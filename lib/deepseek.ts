@@ -56,6 +56,9 @@ function buildContext(ctx: DatabaseContext): string {
     lines.push(`\n宿主内源基因: ${ctx.hostGenome.hasGenes.join(', ')}`)
     lines.push(`宿主缺失通路/基因: ${ctx.hostGenome.lackPathways.join(', ')}`)
   }
+  if (ctx.precursorHint) {
+    lines.push(`\n前体类型提示: ${ctx.precursorHint}`)
+  }
   return lines.join('\n') || '（未找到数据库信息）'
 }
 

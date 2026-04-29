@@ -13,48 +13,113 @@ function getSupabaseAdmin() {
 
 const CACHE_TTL_DAYS = 7
 
-const COMPOUND_MAP: Record<string, string> = {
-  // 萜类
-  '番茄红素': 'lycopene', '青蒿素': 'artemisinin', '虾青素': 'astaxanthin',
-  '紫杉醇': 'paclitaxel', '胡萝卜素': 'beta-carotene', 'β-胡萝卜素': 'beta-carotene',
-  '法尼烯': 'farnesene', '异戊二烯': 'isoprene', '角鲨烯': 'squalene',
-  '紫穗槐二烯': 'amorphadiene', '香叶醇': 'geraniol', '芳樟醇': 'linalool',
-  '柠檬烯': 'limonene', '薄荷醇': 'menthol', '紫杉二烯': 'taxadiene',
-  // 酚类 / 黄酮
-  '白藜芦醇': 'resveratrol', '姜黄素': 'curcumin', '花青素': 'anthocyanin',
-  '槲皮素': 'quercetin', '芹菜素': 'apigenin', '柚皮素': 'naringenin',
-  '圣草酚': 'eriodictyol', '木犀草素': 'luteolin', '山奈酚': 'kaempferol',
-  '对香豆酸': 'p-coumaric acid', '咖啡酸': 'caffeic acid', '阿魏酸': 'ferulic acid',
-  // 生物碱
-  '咖啡因': 'caffeine', '可可碱': 'theobromine', '茶碱': 'theophylline',
-  '吗啡': 'morphine', '可待因': 'codeine', '那可丁': 'noscapine',
-  '小檗碱': 'berberine', '长春碱': 'vinblastine', '长春新碱': 'vincristine',
-  // 有机酸
-  '琥珀酸': 'succinic acid', '乳酸': 'lactic acid', '衣康酸': 'itaconic acid',
-  '富马酸': 'fumaric acid', '苹果酸': 'malic acid', '柠檬酸': 'citric acid',
-  '葡萄糖酸': 'gluconic acid', '丙酮酸': 'pyruvic acid', '丁二酸': 'succinic acid',
-  '3-羟基丙酸': '3-hydroxypropionic acid', '己二酸': 'adipic acid',
-  // 醇类 / 燃料
-  '1,4-丁二醇': '1,4-butanediol', '2,3-丁二醇': '2,3-butanediol',
-  '异丁醇': 'isobutanol', '正丁醇': 'n-butanol', '乙醇': 'ethanol',
-  '丙二醇': 'propanediol', '1,3-丙二醇': '1,3-propanediol',
-  // 氨基酸 / 维生素
-  '赖氨酸': 'lysine', '色氨酸': 'tryptophan', '苯丙氨酸': 'phenylalanine',
-  '酪氨酸': 'tyrosine', '谷氨酸': 'glutamic acid', '丙氨酸': 'alanine',
-  '维生素C': 'ascorbic acid', '维生素B2': 'riboflavin', '维生素B12': 'cobalamin',
-  // 其他天然产物
-  '香兰素': 'vanillin', '紫草素': 'shikonin', '人参皂苷': 'ginsenoside',
-  '大麻素': 'cannabinoid', '大麻二酚': 'cannabidiol', '四氢大麻酚': 'tetrahydrocannabinol',
-  '辅酶Q10': 'coenzyme Q10', '玉米黄质': 'zeaxanthin',
-  '叶黄素': 'lutein', '角黄素': 'canthaxanthin',
+type PrecursorType = 'terpenoid' | 'phenylpropanoid' | 'alkaloid' | 'organic_acid' | 'amino_acid' | 'other'
+
+interface CompoundEntry {
+  en: string
+  precursor: PrecursorType
 }
 
-function normalizeName(name: string): string {
+const COMPOUND_MAP: Record<string, CompoundEntry> = {
+  // 萜类 — 前体 IPP/DMAPP (MEP/MVA途径)
+  '番茄红素': { en: 'lycopene', precursor: 'terpenoid' },
+  '青蒿素': { en: 'artemisinin', precursor: 'terpenoid' },
+  '虾青素': { en: 'astaxanthin', precursor: 'terpenoid' },
+  '紫杉醇': { en: 'paclitaxel', precursor: 'terpenoid' },
+  '胡萝卜素': { en: 'beta-carotene', precursor: 'terpenoid' },
+  'β-胡萝卜素': { en: 'beta-carotene', precursor: 'terpenoid' },
+  '法尼烯': { en: 'farnesene', precursor: 'terpenoid' },
+  '异戊二烯': { en: 'isoprene', precursor: 'terpenoid' },
+  '角鲨烯': { en: 'squalene', precursor: 'terpenoid' },
+  '紫穗槐二烯': { en: 'amorphadiene', precursor: 'terpenoid' },
+  '香叶醇': { en: 'geraniol', precursor: 'terpenoid' },
+  '芳樟醇': { en: 'linalool', precursor: 'terpenoid' },
+  '柠檬烯': { en: 'limonene', precursor: 'terpenoid' },
+  '薄荷醇': { en: 'menthol', precursor: 'terpenoid' },
+  '紫杉二烯': { en: 'taxadiene', precursor: 'terpenoid' },
+  '玉米黄质': { en: 'zeaxanthin', precursor: 'terpenoid' },
+  '叶黄素': { en: 'lutein', precursor: 'terpenoid' },
+  '角黄素': { en: 'canthaxanthin', precursor: 'terpenoid' },
+  '辅酶Q10': { en: 'coenzyme Q10', precursor: 'terpenoid' },
+  // 酚类 / 黄酮 — 前体 苯丙氨酸/酪氨酸 (莽草酸途径)
+  '白藜芦醇': { en: 'resveratrol', precursor: 'phenylpropanoid' },
+  '姜黄素': { en: 'curcumin', precursor: 'phenylpropanoid' },
+  '花青素': { en: 'anthocyanin', precursor: 'phenylpropanoid' },
+  '槲皮素': { en: 'quercetin', precursor: 'phenylpropanoid' },
+  '芹菜素': { en: 'apigenin', precursor: 'phenylpropanoid' },
+  '柚皮素': { en: 'naringenin', precursor: 'phenylpropanoid' },
+  '圣草酚': { en: 'eriodictyol', precursor: 'phenylpropanoid' },
+  '木犀草素': { en: 'luteolin', precursor: 'phenylpropanoid' },
+  '山奈酚': { en: 'kaempferol', precursor: 'phenylpropanoid' },
+  '对香豆酸': { en: 'p-coumaric acid', precursor: 'phenylpropanoid' },
+  '咖啡酸': { en: 'caffeic acid', precursor: 'phenylpropanoid' },
+  '阿魏酸': { en: 'ferulic acid', precursor: 'phenylpropanoid' },
+  '香兰素': { en: 'vanillin', precursor: 'phenylpropanoid' },
+  // 生物碱 — 前体 氨基酸 (酪氨酸/色氨酸等)
+  '咖啡因': { en: 'caffeine', precursor: 'alkaloid' },
+  '可可碱': { en: 'theobromine', precursor: 'alkaloid' },
+  '茶碱': { en: 'theophylline', precursor: 'alkaloid' },
+  '吗啡': { en: 'morphine', precursor: 'alkaloid' },
+  '可待因': { en: 'codeine', precursor: 'alkaloid' },
+  '那可丁': { en: 'noscapine', precursor: 'alkaloid' },
+  '小檗碱': { en: 'berberine', precursor: 'alkaloid' },
+  '长春碱': { en: 'vinblastine', precursor: 'alkaloid' },
+  '长春新碱': { en: 'vincristine', precursor: 'alkaloid' },
+  // 有机酸 — 前体 丙酮酸/草酰乙酸 (TCA途径)
+  '琥珀酸': { en: 'succinic acid', precursor: 'organic_acid' },
+  '乳酸': { en: 'lactic acid', precursor: 'organic_acid' },
+  '衣康酸': { en: 'itaconic acid', precursor: 'organic_acid' },
+  '富马酸': { en: 'fumaric acid', precursor: 'organic_acid' },
+  '苹果酸': { en: 'malic acid', precursor: 'organic_acid' },
+  '柠檬酸': { en: 'citric acid', precursor: 'organic_acid' },
+  '葡萄糖酸': { en: 'gluconic acid', precursor: 'organic_acid' },
+  '丙酮酸': { en: 'pyruvic acid', precursor: 'organic_acid' },
+  '丁二酸': { en: 'succinic acid', precursor: 'organic_acid' },
+  '3-羟基丙酸': { en: '3-hydroxypropionic acid', precursor: 'organic_acid' },
+  '己二酸': { en: 'adipic acid', precursor: 'organic_acid' },
+  // 醇类 / 燃料 — 前体 丙酮酸/乙酰CoA
+  '1,4-丁二醇': { en: '1,4-butanediol', precursor: 'organic_acid' },
+  '2,3-丁二醇': { en: '2,3-butanediol', precursor: 'organic_acid' },
+  '异丁醇': { en: 'isobutanol', precursor: 'organic_acid' },
+  '正丁醇': { en: 'n-butanol', precursor: 'organic_acid' },
+  '乙醇': { en: 'ethanol', precursor: 'organic_acid' },
+  '丙二醇': { en: 'propanediol', precursor: 'organic_acid' },
+  '1,3-丙二醇': { en: '1,3-propanediol', precursor: 'organic_acid' },
+  // 氨基酸 / 维生素
+  '赖氨酸': { en: 'lysine', precursor: 'amino_acid' },
+  '色氨酸': { en: 'tryptophan', precursor: 'amino_acid' },
+  '苯丙氨酸': { en: 'phenylalanine', precursor: 'amino_acid' },
+  '酪氨酸': { en: 'tyrosine', precursor: 'amino_acid' },
+  '谷氨酸': { en: 'glutamic acid', precursor: 'amino_acid' },
+  '丙氨酸': { en: 'alanine', precursor: 'amino_acid' },
+  '维生素C': { en: 'ascorbic acid', precursor: 'amino_acid' },
+  '维生素B2': { en: 'riboflavin', precursor: 'amino_acid' },
+  '维生素B12': { en: 'cobalamin', precursor: 'amino_acid' },
+  // 其他
+  '紫草素': { en: 'shikonin', precursor: 'other' },
+  '人参皂苷': { en: 'ginsenoside', precursor: 'terpenoid' },
+  '大麻素': { en: 'cannabinoid', precursor: 'other' },
+  '大麻二酚': { en: 'cannabidiol', precursor: 'other' },
+  '四氢大麻酚': { en: 'tetrahydrocannabinol', precursor: 'other' },
+}
+
+const PRECURSOR_HINT: Record<PrecursorType, string> = {
+  terpenoid: '前体为IPP/DMAPP（萜类），相关内源基因为MEP途径(dxs,idi,ispA等)或MVA途径，只过表达与萜类合成直接相关的基因',
+  phenylpropanoid: '前体为苯丙氨酸/酪氨酸（莽草酸途径），相关内源基因为aroG,aroB,aroD,aroE,aroK,aroA,aroC,pheA,tyrA等，只过表达莽草酸途径相关基因',
+  alkaloid: '前体为氨基酸（酪氨酸/色氨酸/组氨酸等），只过表达与该氨基酸合成直接相关的基因',
+  organic_acid: '前体为丙酮酸/草酰乙酸（TCA途径），相关内源基因为ppc,pck,mdh,sdhABCD等，只过表达TCA途径相关基因',
+  amino_acid: '前体为中心代谢氨基酸，只过表达与目标氨基酸合成直接相关的基因',
+  other: '根据KEGG数据判断前体类型，只过表达与目标产物合成直接相关的基因',
+}
+
+function normalizeName(name: string): { en: string; precursorHint?: string } {
   const trimmed = name.trim()
-  if (COMPOUND_MAP[trimmed]) return COMPOUND_MAP[trimmed]
+  const entry = COMPOUND_MAP[trimmed]
+  if (entry) return { en: entry.en, precursorHint: PRECURSOR_HINT[entry.precursor] }
   const lower = trimmed.toLowerCase()
-  const key = Object.keys(COMPOUND_MAP).find(k => lower.includes(k))
-  return COMPOUND_MAP[key ?? ''] || trimmed
+  const key = Object.keys(COMPOUND_MAP).find(k => lower.includes(k.toLowerCase()))
+  if (key) return { en: COMPOUND_MAP[key].en, precursorHint: PRECURSOR_HINT[COMPOUND_MAP[key].precursor] }
+  return { en: trimmed }
 }
 
 export const HOST_GENOME: Record<string, { hasGenes: string[]; lackPathways: string[] }> = {
@@ -77,6 +142,7 @@ export interface DatabaseContext {
   kegg: { id: string; pathways: string[]; enzymes: string[]; reactions: string[]; reactionDetails: { id: string; equation: string; enzymes: string[] }[] } | null
   uniprot: { accession: string; name: string; organism: string; gene?: string; length?: number; function?: string }[]
   searchedName: string
+  precursorHint?: string
   hostGenome?: { hasGenes: string[]; lackPathways: string[] }
   literature: { title: string; pmid: string; year: string }[]
 }
@@ -205,7 +271,7 @@ async function queryPubMed(query: string): Promise<{ title: string; pmid: string
 }
 
 export async function gatherContext(molecule: string, host?: string): Promise<DatabaseContext> {
-  const searchedName = normalizeName(molecule)
+  const { en: searchedName, precursorHint } = normalizeName(molecule)
   const hostGenome = host ? HOST_GENOME[host] : undefined
 
   const db = getSupabaseAdmin() as any
@@ -219,7 +285,7 @@ export async function gatherContext(molecule: string, host?: string): Promise<Da
     const age = (Date.now() - new Date(cached.cached_at).getTime()) / 86400000
     if (age < CACHE_TTL_DAYS) {
       const literature = await queryPubMed(`${searchedName} biosynthesis metabolic engineering`)
-      return { ...cached.context, hostGenome, literature }
+      return { ...cached.context, hostGenome, precursorHint, literature }
     }
   }
 
@@ -229,7 +295,7 @@ export async function gatherContext(molecule: string, host?: string): Promise<Da
     queryUniProt(searchedName),
     queryPubMed(`${searchedName} biosynthesis metabolic engineering`),
   ])
-  const ctx: DatabaseContext = { pubchem, kegg, uniprot, searchedName, hostGenome, literature }
+  const ctx: DatabaseContext = { pubchem, kegg, uniprot, searchedName, precursorHint, hostGenome, literature }
 
   try {
     await db
