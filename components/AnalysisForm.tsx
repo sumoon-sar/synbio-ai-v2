@@ -29,6 +29,7 @@ export default function AnalysisForm({ onResult }: Props) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? '分析失败')
+      if (!data.result) throw new Error(data.error ?? '返回数据为空')
       onResult(data.result)
     } catch (err: any) {
       setError(err.message)
