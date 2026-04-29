@@ -116,17 +116,31 @@ const PRECURSOR_HINT: Record<PrecursorType, string> = {
   phenylpropanoid: '前体为苯丙氨酸/酪氨酸（莽草酸途径），相关内源基因为aroG,aroB,aroD,aroE,aroK,aroA,aroC,pheA,tyrA等，只过表达莽草酸途径相关基因',
   alkaloid: '前体为氨基酸（酪氨酸/色氨酸/组氨酸等），只过表达与该氨基酸合成直接相关的基因',
   organic_acid: '前体为丙酮酸/草酰乙酸（TCA途径），相关内源基因为ppc,pck,mdh,sdhABCD等，只过表达TCA途径相关基因',
-  amino_acid: '前体为氨基酸（组氨酸/赖氨酸/色氨酸等），只过表达与目标氨基酸合成直接相关的基因（如hisG,hisD等），禁止过表达MEP途径(dxs,idi,isp*)或TCA途径基因',
+  amino_acid: '前体为氨基酸（组氨酸/赖氨酸/色氨酸等），只过表达与目标氨基酸合成直接相关的基因（如hisG,hisD等）',
   other: '根据KEGG数据判断前体类型，只过表达与目标产物合成直接相关的基因',
+}
+
+const PRECURSOR_FORBIDDEN_GENES: Partial<Record<PrecursorType, string[]>> = {
+  phenylpropanoid: ['dxs','idi','ispA','ispB','ispC','ispD','ispE','ispF','ispG','ispH','ppc','pck','sdhA','sdhB','sdhC','sdhD','fumA','fumB','fumC','mdh','sucA','sucB','sucC','sucD','icd','acnA','acnB'],
+  amino_acid: ['dxs','idi','ispA','ispB','ispC','ispD','ispE','ispF','ispG','ispH'],
 }
 
 function normalizeName(name: string): { en: string; precursorHint?: string; forbiddenGenes?: string[] } {
   const trimmed = name.trim()
   const entry = COMPOUND_MAP[trimmed]
-  if (entry) return { en: entry.en, precursorHint: entry.hint ?? PRECURSOR_HINT[entry.precursor], forbiddenGenes: entry.forbiddenGenes }
+  if (entry) {
+    const precursorForbidden = PRECURSOR_FORBIDDEN_GENES[entry.precursor] ?? []
+    const forbidden = [...new Set([...(entry.forbiddenGenes ?? []), ...precursorForbidden])]
+    return { en: entry.en, precursorHint: entry.hint ?? PRECURSOR_HINT[entry.precursor], forbiddenGenes: forbidden.length ? forbidden : undefined }
+  }
   const lower = trimmed.toLowerCase()
   const key = Object.keys(COMPOUND_MAP).find(k => lower.includes(k.toLowerCase()))
-  if (key) return { en: COMPOUND_MAP[key].en, precursorHint: PRECURSOR_HINT[COMPOUND_MAP[key].precursor], forbiddenGenes: COMPOUND_MAP[key].forbiddenGenes }
+  if (key) {
+    const e = COMPOUND_MAP[key]
+    const precursorForbidden = PRECURSOR_FORBIDDEN_GENES[e.precursor] ?? []
+    const forbidden = [...new Set([...(e.forbiddenGenes ?? []), ...precursorForbidden])]
+    return { en: e.en, precursorHint: PRECURSOR_HINT[e.precursor], forbiddenGenes: forbidden.length ? forbidden : undefined }
+  }
   return { en: trimmed }
 }
 
