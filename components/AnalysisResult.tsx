@@ -6,6 +6,7 @@ interface Props {
 }
 
 export default function AnalysisResult({ result }: Props) {
+  if (!result || typeof result !== 'object') return <div className="p-4 text-red-500">结果格式错误</div>
   const exportReport = () => {
     try {
       const esc = (s: string) => (s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')

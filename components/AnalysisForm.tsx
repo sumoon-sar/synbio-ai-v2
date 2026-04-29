@@ -52,9 +52,17 @@ export default function AnalysisForm({ onResult }: Props) {
           const eventLine = part.match(/^event: (\w+)/)
           const dataLine = part.match(/^data: (.+)/m)
           if (!eventLine || !dataLine) continue
-          const payload = JSON.parse(dataLine[1])
+          let payload: any
+          try {
+            payload = JSON.parse(dataLine[1])
+          } catch {
+            continue
+          }
           if (eventLine[1] === 'progress') setProgress(String(payload.message ?? ''))
-          else if (eventLine[1] === 'done') onResult(payload.result)
+          else if (eventLine[1] === 'done') {
+            if (!payload.result || typeof payload.result !== 'object') throw new Error('返回数据格式错误')
+            onResult(payload.result)
+          }
           else if (eventLine[1] === 'error') throw new Error(String(payload.error ?? '分析失败'))
         }
       }

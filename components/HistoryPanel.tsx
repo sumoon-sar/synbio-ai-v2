@@ -20,7 +20,7 @@ export default function HistoryPanel({ history, onSelect }: Props) {
           className="w-full text-left px-3 py-2 rounded-lg hover:bg-cyan-50 border border-transparent hover:border-cyan-200 transition-colors"
         >
           <p className="text-sm font-medium text-gray-800">{item.molecule}</p>
-          <p className="text-xs text-gray-400">{item.host} · {new Date(item.created_at).toLocaleDateString()}</p>
+          <p className="text-xs text-gray-400">{item.host} · {item.created_at.slice(0, 10)}</p>
         </button>
       ))}
     </div>
