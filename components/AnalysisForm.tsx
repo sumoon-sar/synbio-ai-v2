@@ -53,9 +53,9 @@ export default function AnalysisForm({ onResult }: Props) {
           const dataLine = part.match(/^data: (.+)/m)
           if (!eventLine || !dataLine) continue
           const payload = JSON.parse(dataLine[1])
-          if (eventLine[1] === 'progress') setProgress(payload.message)
+          if (eventLine[1] === 'progress') setProgress(String(payload.message ?? ''))
           else if (eventLine[1] === 'done') onResult(payload.result)
-          else if (eventLine[1] === 'error') throw new Error(payload.error)
+          else if (eventLine[1] === 'error') throw new Error(String(payload.error ?? '分析失败'))
         }
       }
     } catch (err: any) {

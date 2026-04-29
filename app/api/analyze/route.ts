@@ -2,6 +2,8 @@ import { createSupabaseServer } from '@/lib/supabase-server'
 import { gatherContext } from '@/lib/databases'
 import { analyzeWithReview } from '@/lib/deepseek'
 
+export const maxDuration = 300
+
 function sse(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
 }
