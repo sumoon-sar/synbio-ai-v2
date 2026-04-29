@@ -4,17 +4,13 @@ import { analyzeWithReview } from '@/lib/deepseek'
 
 export const maxDuration = 300
 
-function sse(event: string, data: unknown) {
-  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
-}
-
 export async function POST(request: Request) {
   const supabase = await createSupabaseServer()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return new Response(JSON.stringify({ error: '未登录' }), { status: 401 })
+  if (!user) return Response.json({ error: '未登录' }, { status: 401 })
 
   const { molecule, host } = await request.json()
-  if (!molecule || !host) return new Response(JSON.stringify({ error: '参数缺失' }), { status: 400 })
+  if (!molecule || !host) return Response.json({ error: '参数缺失' }, { status: 400 })
 
   // Check analysis cache
   const since = new Date(Date.now() - 7 * 86400000).toISOString()
@@ -28,9 +24,7 @@ export async function POST(request: Request) {
     .order('created_at', { ascending: false })
     .limit(1)
     .single()
-  if (cached) return new Response(JSON.stringify({ result: cached.result, cached: true }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
+  if (cached) return Response.json({ result: cached.result, cached: true })
 
   // Rate limit
   const todayStart = new Date()
@@ -41,42 +35,15 @@ export async function POST(request: Request) {
     .eq('user_id', user.id)
     .gte('created_at', todayStart.toISOString())
   if ((count ?? 0) >= 5)
-    return new Response(JSON.stringify({ error: '今日分析次数已达上限（5次）' }), { status: 429 })
+    return Response.json({ error: '今日分析次数已达上限（5次）' }, { status: 429 })
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const enc = new TextEncoder()
-      const send = (event: string, data: unknown) => controller.enqueue(enc.encode(sse(event, data)))
-
-      try {
-        send('progress', { step: 'db', message: '正在查询数据库...' })
-        const ctx = await gatherContext(molecule, host)
-
-        send('progress', { step: 'ai', message: 'AI 正在生成分析...' })
-        const { result, warnings } = await Promise.race([
-          analyzeWithReview({ molecule, host }, ctx),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('分析超时，请重试')), 150000)),
-        ])
-
-        send('progress', { step: 'review', message: 'AI 审核完成' })
-
-        const analysisResult = { molecule, host, ...result, reviewWarnings: warnings, literature: ctx.literature }
-        await supabase.from('analysis_history').insert({ user_id: user.id, molecule, host, result: analysisResult })
-
-        send('done', { result: analysisResult })
-      } catch (err: any) {
-        send('error', { error: err.message ?? '分析失败' })
-      } finally {
-        controller.close()
-      }
-    },
-  })
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  })
+  try {
+    const ctx = await gatherContext(molecule, host)
+    const { result, warnings } = await analyzeWithReview({ molecule, host }, ctx)
+    const analysisResult = { molecule, host, ...result, reviewWarnings: warnings, literature: ctx.literature }
+    await supabase.from('analysis_history').insert({ user_id: user.id, molecule, host, result: analysisResult })
+    return Response.json({ result: analysisResult })
+  } catch (err: any) {
+    return Response.json({ error: err.message ?? '分析失败' }, { status: 500 })
+  }
 }

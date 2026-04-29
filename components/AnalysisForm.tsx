@@ -19,7 +19,7 @@ export default function AnalysisForm({ onResult }: Props) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
-    setProgress('')
+    setProgress('分析中...')
     setLoading(true)
     try {
       const res = await fetch('/api/analyze', {
@@ -27,45 +27,9 @@ export default function AnalysisForm({ onResult }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ molecule, host: host === '自定义' ? customHost : host }),
       })
-
-      const contentType = res.headers.get('content-type') ?? ''
-
-      // Cached or error — plain JSON response
-      if (!contentType.includes('text/event-stream')) {
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error)
-        onResult(data.result)
-        return
-      }
-
-      // SSE stream
-      const reader = res.body!.getReader()
-      const decoder = new TextDecoder()
-      let buf = ''
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buf += decoder.decode(value, { stream: true })
-        const parts = buf.split('\n\n')
-        buf = parts.pop() ?? ''
-        for (const part of parts) {
-          const eventLine = part.match(/^event: (\w+)/)
-          const dataLine = part.match(/^data: (.+)/m)
-          if (!eventLine || !dataLine) continue
-          let payload: any
-          try {
-            payload = JSON.parse(dataLine[1])
-          } catch {
-            continue
-          }
-          if (eventLine[1] === 'progress') setProgress(String(payload.message ?? ''))
-          else if (eventLine[1] === 'done') {
-            if (!payload.result || typeof payload.result !== 'object') throw new Error('返回数据格式错误')
-            onResult(payload.result)
-          }
-          else if (eventLine[1] === 'error') throw new Error(String(payload.error ?? '分析失败'))
-        }
-      }
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? '分析失败')
+      onResult(data.result)
     } catch (err: any) {
       setError(err.message)
     } finally {
