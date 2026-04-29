@@ -18,6 +18,7 @@ type PrecursorType = 'terpenoid' | 'phenylpropanoid' | 'alkaloid' | 'organic_aci
 interface CompoundEntry {
   en: string
   precursor: PrecursorType
+  hint?: string
 }
 
 const COMPOUND_MAP: Record<string, CompoundEntry> = {
@@ -96,7 +97,7 @@ const COMPOUND_MAP: Record<string, CompoundEntry> = {
   '维生素B2': { en: 'riboflavin', precursor: 'amino_acid' },
   '维生素B12': { en: 'cobalamin', precursor: 'amino_acid' },
   // 含硫氨基酸衍生物 — 前体 组氨酸/半胱氨酸
-  '麦角硫因': { en: 'ergothioneine', precursor: 'amino_acid' },
+  '麦角硫因': { en: 'ergothioneine', precursor: 'amino_acid', hint: '前体为L-组氨酸和S-腺苷甲硫氨酸（SAM），只过表达组氨酸合成相关基因（hisG,hisD,hisB,hisH,hisA,hisF,hisI）和SAM合成基因（metK），禁止过表达MEP途径(dxs,idi,isp*)基因' },
   '谷胱甘肽': { en: 'glutathione', precursor: 'amino_acid' },
   // 聚酮/脂肪酸衍生物
   '脂肪酸': { en: 'fatty acid', precursor: 'organic_acid' },
@@ -114,14 +115,14 @@ const PRECURSOR_HINT: Record<PrecursorType, string> = {
   phenylpropanoid: '前体为苯丙氨酸/酪氨酸（莽草酸途径），相关内源基因为aroG,aroB,aroD,aroE,aroK,aroA,aroC,pheA,tyrA等，只过表达莽草酸途径相关基因',
   alkaloid: '前体为氨基酸（酪氨酸/色氨酸/组氨酸等），只过表达与该氨基酸合成直接相关的基因',
   organic_acid: '前体为丙酮酸/草酰乙酸（TCA途径），相关内源基因为ppc,pck,mdh,sdhABCD等，只过表达TCA途径相关基因',
-  amino_acid: '前体为中心代谢氨基酸，只过表达与目标氨基酸合成直接相关的基因',
+  amino_acid: '前体为氨基酸（组氨酸/赖氨酸/色氨酸等），只过表达与目标氨基酸合成直接相关的基因（如hisG,hisD等），禁止过表达MEP途径(dxs,idi,isp*)或TCA途径基因',
   other: '根据KEGG数据判断前体类型，只过表达与目标产物合成直接相关的基因',
 }
 
 function normalizeName(name: string): { en: string; precursorHint?: string } {
   const trimmed = name.trim()
   const entry = COMPOUND_MAP[trimmed]
-  if (entry) return { en: entry.en, precursorHint: PRECURSOR_HINT[entry.precursor] }
+  if (entry) return { en: entry.en, precursorHint: entry.hint ?? PRECURSOR_HINT[entry.precursor] }
   const lower = trimmed.toLowerCase()
   const key = Object.keys(COMPOUND_MAP).find(k => lower.includes(k.toLowerCase()))
   if (key) return { en: COMPOUND_MAP[key].en, precursorHint: PRECURSOR_HINT[COMPOUND_MAP[key].precursor] }
