@@ -181,6 +181,10 @@ export const HOST_GENOME: Record<string, { hasGenes: string[]; lackPathways: str
       'mvaA', 'mvaS', 'mvaK1', 'mvaK2', 'mvaD', 'mvaE',
       // 莽草酸途径
       'aroA', 'aroB', 'aroC', 'aroD', 'aroE', 'aroF', 'aroG', 'aroH',
+      // 组氨酸合成
+      'hisG', 'hisD', 'hisB', 'hisH', 'hisA', 'hisF', 'hisI', 'hisC', 'hisE',
+      // SAM/甲硫氨酸
+      'metK', 'metA', 'metB', 'metC', 'metE', 'metH',
       // TCA途径
       'citA', 'citB', 'icd', 'odhA', 'odhB', 'sdhA', 'sdhB', 'sdhC', 'fumC', 'mdh',
       // 糖酵解
