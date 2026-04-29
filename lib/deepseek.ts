@@ -148,18 +148,16 @@ ${dbContext}
     ? `\nKEGG已知反应（以此为准判断EC编号正确性）：\n${ctx.kegg.reactionDetails.map(r => `  ${r.id}: ${r.equation}${r.enzymes.length ? ` [EC:${r.enzymes.join('/')}]` : ''}`).join('\n')}`
     : ''
 
-  const reviewPrompt = `你是合成生物学审稿人。只报告以下四类确定错误，其他一律不报告。
+  const reviewPrompt = `你是合成生物学审稿人。只报告以下两类确定错误，其他一律不报告。
 ${keggReactions}
 报告内容（JSON）：
 ${JSON.stringify({ metabolicRoute: result.metabolicRoute, keyEnzymes: result.keyEnzymes, engineeringStrategy: result.engineeringStrategy }, null, 2)}
 
-四类错误（缺一不报）：
-1. EC编号与所描述反应不符（酶根本不催化该反应，非底物描述不完整）；若代谢路径标注"AI推断"则不报告EC错误
-2. knockout基因在宿主中不存在
-3. 同一基因同时出现在overexpress和knockout
-4. 异源酶有已知副活性会消耗目标产物
+两类错误（缺一不报）：
+1. 同一基因同时出现在overexpress和knockout列表中
+2. knockout列表中的基因标注为"AI推断"来源（即非KEGG数据支持）
 
-禁止报告：反应正确、底物描述不完整、步骤可简化、需验证、accession号问题、AI推断的EC编号
+绝对禁止报告：EC编号正确性、反应底物、步骤合理性、物种选择、accession号、需验证的内容
 
 格式：每条≤20字，只说错误本身。无错误返回 []
 
