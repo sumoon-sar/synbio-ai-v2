@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { queryLiteratureContext } from './literature'
 
 let _supabaseAdmin: ReturnType<typeof createClient> | null = null
 function getSupabaseAdmin() {
@@ -68,7 +69,7 @@ const COMPOUND_MAP: Record<string, CompoundEntry> = {
   '长春碱': { en: 'vinblastine', precursor: 'alkaloid' },
   '长春新碱': { en: 'vincristine', precursor: 'alkaloid' },
   // 有机酸 — 前体 丙酮酸/草酰乙酸 (TCA途径)
-  '琥珀酸': { en: 'succinic acid', precursor: 'organic_acid' },
+  '琥珀酸': { en: 'succinic acid', precursor: 'organic_acid', forbiddenGenes: ['sdhA','sdhB','sdhC','sdhD','fumA','fumB','fumC','mdh','sucA','sucB','sucC','sucD','icd','acnA','acnB'] },
   '乳酸': { en: 'lactic acid', precursor: 'organic_acid' },
   '衣康酸': { en: 'itaconic acid', precursor: 'organic_acid' },
   '富马酸': { en: 'fumaric acid', precursor: 'organic_acid' },
@@ -76,7 +77,7 @@ const COMPOUND_MAP: Record<string, CompoundEntry> = {
   '柠檬酸': { en: 'citric acid', precursor: 'organic_acid' },
   '葡萄糖酸': { en: 'gluconic acid', precursor: 'organic_acid' },
   '丙酮酸': { en: 'pyruvic acid', precursor: 'organic_acid' },
-  '丁二酸': { en: 'succinic acid', precursor: 'organic_acid' },
+  '丁二酸': { en: 'succinic acid', precursor: 'organic_acid', forbiddenGenes: ['sdhA','sdhB','sdhC','sdhD','fumA','fumB','fumC','mdh','sucA','sucB','sucC','sucD','icd','acnA','acnB'] },
   '3-羟基丙酸': { en: '3-hydroxypropionic acid', precursor: 'organic_acid' },
   '己二酸': { en: 'adipic acid', precursor: 'organic_acid' },
   // 醇类 / 燃料 — 前体 丙酮酸/乙酰CoA
@@ -123,6 +124,7 @@ const PRECURSOR_HINT: Record<PrecursorType, string> = {
 const PRECURSOR_FORBIDDEN_GENES: Partial<Record<PrecursorType, string[]>> = {
   phenylpropanoid: ['dxs','idi','ispA','ispB','ispC','ispD','ispE','ispF','ispG','ispH','ppc','pck','sdhA','sdhB','sdhC','sdhD','fumA','fumB','fumC','mdh','sucA','sucB','sucC','sucD','icd','acnA','acnB'],
   amino_acid: ['dxs','idi','ispA','ispB','ispC','ispD','ispE','ispF','ispG','ispH'],
+  alkaloid: ['dxs','idi','ispA','ispB','ispC','ispD','ispE','ispF','ispG','ispH','pgi','zwf','gnd','tktA','tktB','talB','ppc','pck','sdhA','sdhB','sdhC','sdhD','fumA','fumB','fumC','mdh'],
 }
 
 function normalizeName(name: string): { en: string; precursorHint?: string; forbiddenGenes?: string[] } {
@@ -219,6 +221,7 @@ export interface DatabaseContext {
   forbiddenGenes?: string[]
   hostGenome?: { hasGenes: string[]; lackPathways: string[] }
   literature: { title: string; pmid: string; year: string }[]
+  localLiterature: { title: string; year: number; host: string; titer?: number; genesOverexpressed: string[]; genesKnockedOut: string[]; heterologousGenes: string[]; keyFinding: string }[]
 }
 
 async function queryPubChem(name: string): Promise<DatabaseContext['pubchem']> {
@@ -365,18 +368,22 @@ export async function gatherContext(molecule: string, host?: string): Promise<Da
   if (cached) {
     const age = (Date.now() - new Date(cached.cached_at).getTime()) / 86400000
     if (age < CACHE_TTL_DAYS) {
-      const literature = await queryPubMed(`${searchedName}[Title/Abstract] AND (biosynthesis OR "metabolic engineering")[Title/Abstract]`)
-      return { ...cached.context, hostGenome, precursorHint, forbiddenGenes, literature }
+      const [literature, localLiterature] = await Promise.all([
+        queryPubMed(`${searchedName}[Title/Abstract] AND (biosynthesis OR "metabolic engineering")[Title/Abstract]`),
+        queryLiteratureContext(searchedName, host ?? ''),
+      ])
+      return { ...cached.context, hostGenome, precursorHint, forbiddenGenes, literature, localLiterature }
     }
   }
 
-  const [pubchem, kegg, uniprot, literature] = await Promise.all([
+  const [pubchem, kegg, uniprot, literature, localLiterature] = await Promise.all([
     queryPubChem(searchedName),
     queryKEGG(searchedName),
     queryUniProt(searchedName),
     queryPubMed(`${searchedName}[Title/Abstract] AND (biosynthesis OR "metabolic engineering")[Title/Abstract]`),
+    queryLiteratureContext(searchedName, host ?? ''),
   ])
-  const ctx: DatabaseContext = { pubchem, kegg, uniprot, searchedName, precursorHint, forbiddenGenes, hostGenome, literature }
+  const ctx: DatabaseContext = { pubchem, kegg, uniprot, searchedName, precursorHint, forbiddenGenes, hostGenome, literature, localLiterature }
 
   try {
     await db

@@ -59,6 +59,18 @@ function buildContext(ctx: DatabaseContext): string {
   if (ctx.precursorHint) {
     lines.push(`\n前体类型提示: ${ctx.precursorHint}`)
   }
+  if (ctx.localLiterature?.length) {
+    lines.push(`\n已发表实验数据（优先参考，以下为文献验证的工程策略）:`)
+    ctx.localLiterature.forEach(e => {
+      const parts = [`[${e.year}] ${e.host}`]
+      if (e.titer) parts.push(`产量${e.titer}mg/L`)
+      if (e.genesOverexpressed.length) parts.push(`过表达:${e.genesOverexpressed.join('/')}`)
+      if (e.genesKnockedOut.length) parts.push(`敲除:${e.genesKnockedOut.join('/')}`)
+      if (e.heterologousGenes.length) parts.push(`异源引入:${e.heterologousGenes.join('/')}`)
+      parts.push(e.keyFinding)
+      lines.push(`  ${parts.join(', ')}`)
+    })
+  }
   return lines.join('\n') || '（未找到数据库信息）'
 }
 
@@ -83,11 +95,13 @@ ${dbContext}
 2. 代谢路径中的EC编号必须来自上方KEGG数据；若KEGG无数据则标注"AI推断"，不得编造
 3. 代谢路径每步必须标注酶的EC编号和数据来源(KEGG或AI推断)
 4. 工程策略中"过表达"和"敲除"的基因必须存在于宿主内源基因列表中，不存在则不得列入
+4a. 过表达列表中每个基因必须直接参与目标产物的前体合成途径（${ctx.precursorHint ? `即：${ctx.precursorHint}` : '即与目标产物合成直接相关的途径'}），不在该途径中的基因一律不得列入过表达
 5. 宿主缺失的通路/基因需在notes中注明"需异源引入"，不得列入过表达或敲除
 6. 同一基因不得同时出现在过表达和敲除列表中
 7. notes中只描述与目标产物合成直接相关的信息，不得列出与目标产物无关的宿主缺失基因
 8. 敲除基因必须同时满足：(a)该基因编码的酶直接消耗目标产物的直接前体或目标产物本身；(b)敲除该基因不会导致细胞生长停滞；不满足以上两个条件的基因不得列入敲除列表
-9. 只返回JSON，不含任何其他文字
+9. 过表达列表中禁止包含以目标产物本身为底物的酶的基因（即直接消耗目标产物的酶）；根据上方KEGG反应方程式判断，若某反应的底物为目标产物，则催化该反应的基因不得列入过表达
+10. 只返回JSON，不含任何其他文字
 
 返回格式：
 {
