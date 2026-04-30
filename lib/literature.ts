@@ -74,9 +74,9 @@ ${text.slice(0, 3000)}
 }
 
 export async function syncPubMedLiterature(molecule = 'ergothioneine'): Promise<number> {
-  const query = `${molecule} AND (biosynthesis OR "metabolic engineering" OR production OR yield)`
+  const query = `${molecule} AND (biosynthesis OR "metabolic engineering" OR "microbial production" OR "fermentation" OR "yield improvement")`
   const searchRes = await fetch(
-    `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmax=20&retmode=json&sort=date`,
+    `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmax=100&retmode=json`,
     { signal: AbortSignal.timeout(10000) }
   )
   if (!searchRes.ok) return 0
