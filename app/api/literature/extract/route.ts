@@ -2,7 +2,7 @@ import { extractAndStore } from '@/lib/literature'
 import { createClient } from '@supabase/supabase-js'
 import { createSupabaseServer } from '@/lib/supabase-server'
 
-export const maxDuration = 300
+export const maxDuration = 60
 
 function getDb() {
   return createClient(
