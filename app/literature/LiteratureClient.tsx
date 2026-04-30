@@ -24,7 +24,7 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
     setMsg('')
     let pct = 0
     timerRef.current = setInterval(() => {
-      pct = Math.min(pct + 0.5, 90)
+      pct = Math.min(pct + 0.08, 90)
       setSyncProgress(pct)
     }, 400)
     try {
