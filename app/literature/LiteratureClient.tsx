@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import LiteratureUpload from '@/components/LiteratureUpload'
 
 type Paper = {
@@ -14,7 +14,19 @@ type Paper = {
 export default function LiteratureClient({ papers: initial }: { papers: Paper[] }) {
   const [papers, setPapers] = useState(initial)
   const [syncing, setSyncing] = useState(false)
+  const [syncProgress, setSyncProgress] = useState(0)
   const [msg, setMsg] = useState('')
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (!syncing) { setSyncProgress(0); return }
+    let pct = 0
+    timerRef.current = setInterval(() => {
+      pct += 100 / (90000 / 500)
+      setSyncProgress(Math.min(pct, 90))
+    }, 500)
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [syncing])
 
   async function handleSync() {
     setSyncing(true)
@@ -23,8 +35,9 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
       const res = await fetch('/api/literature/sync', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
+      setSyncProgress(100)
       setMsg(`新增 ${data.added} 篇文献`)
-      window.location.reload()
+      setTimeout(() => window.location.reload(), 500)
     } catch (e: any) {
       setMsg(`失败：${e.message}`)
     } finally {
@@ -47,6 +60,18 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
           </button>
         </div>
       </div>
+
+      {syncing && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', marginBottom: 4 }}>
+            <span>正在抓取并提取文献数据...</span>
+            <span>{Math.round(syncProgress)}%</span>
+          </div>
+          <div style={{ background: '#e2e8f0', borderRadius: 4, height: 6 }}>
+            <div style={{ background: 'linear-gradient(to right, #06b6d4, #2563eb)', height: 6, borderRadius: 4, width: `${syncProgress}%`, transition: 'width 0.5s' }} />
+          </div>
+        </div>
+      )}
 
       {msg && <p style={{ color: '#64748b', marginBottom: 16 }}>{msg}</p>}
 
@@ -87,3 +112,4 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
 
 const th: React.CSSProperties = { border: '1px solid #e2e8f0', padding: '8px', textAlign: 'left', fontWeight: 600 }
 const td: React.CSSProperties = { border: '1px solid #e2e8f0', padding: '8px', fontSize: 13, verticalAlign: 'top' }
+
