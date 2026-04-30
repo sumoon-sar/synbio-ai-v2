@@ -43,18 +43,19 @@ async function callDeepSeekJson(prompt: string): Promise<any> {
 
 export async function extractAndStore(paperId: string, text: string): Promise<void> {
   const prompt = `从以下生物学文献摘要/全文中提取实验数据，只返回JSON，无其他文字。
+重点提取：基因名（如egtD、egtB、egtE、metK、hisG等）、宿主、产量数值。
 
 文本：
 ${text.slice(0, 3000)}
 
 返回格式：
 {
-  "host_organism": "宿主菌株名，如 E. coli / B. subtilis，无则null",
-  "genes_overexpressed": ["基因名列表，无则[]"],
-  "genes_knocked_out": ["基因名列表，无则[]"],
-  "heterologous_genes": ["异源引入基因列表，无则[]"],
-  "titer_mg_per_l": 产量数值(mg/L)，无则null,
-  "key_finding": "1-2句关键发现"
+  "host_organism": "宿主菌株名，如 E. coli / B. subtilis / S. cerevisiae，无则null",
+  "genes_overexpressed": ["过表达或异源引入的基因名列表，从文本中直接提取，无则[]"],
+  "genes_knocked_out": ["敲除的基因名列表，无则[]"],
+  "heterologous_genes": ["异源引入的基因名列表（来自其他物种），无则[]"],
+  "titer_mg_per_l": 产量数值(mg/L)，若文中为g/L则乘以1000转换，无则null,
+  "key_finding": "1-2句关键发现，重点描述工程策略和产量提升"
 }`
 
   try {
@@ -73,8 +74,9 @@ ${text.slice(0, 3000)}
   } catch { /* non-fatal */ }
 }
 
-export async function syncPubMedLiterature(molecule = 'ergothioneine'): Promise<number> {
-  const query = `${molecule} AND (biosynthesis OR "metabolic engineering" OR "microbial production" OR "fermentation" OR "yield improvement") AND (bacteria OR yeast OR "E. coli" OR "Escherichia coli" OR "Saccharomyces" OR "Bacillus" OR "Corynebacterium" OR "Yarrowia")`
+export async function syncPubMedLiterature(molecule = 'ergothioneine', minYear?: number): Promise<number> {
+  const yearFilter = minYear ? ` AND ${minYear}:3000[pdat]` : ''
+  const query = `${molecule} AND (biosynthesis OR "metabolic engineering" OR "microbial production" OR "fermentation" OR "yield improvement") AND (bacteria OR yeast OR "E. coli" OR "Escherichia coli" OR "Saccharomyces" OR "Bacillus" OR "Corynebacterium" OR "Yarrowia")${yearFilter}`
   const searchRes = await fetch(
     `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmax=100&retmode=json`,
     { signal: AbortSignal.timeout(10000) }

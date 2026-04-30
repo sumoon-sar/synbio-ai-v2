@@ -19,7 +19,7 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
   const [msg, setMsg] = useState('')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  async function handleSync() {
+  async function handleSync(minYear?: number) {
     setSyncing(true)
     setSyncProgress(0)
     setMsg('')
@@ -29,7 +29,11 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
       setSyncProgress(pct)
     }, 400)
     try {
-      const res = await fetch('/api/literature/sync', { method: 'POST' })
+      const res = await fetch('/api/literature/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(minYear ? { minYear } : {}),
+      })
       const data = await res.json()
       if (timerRef.current) clearInterval(timerRef.current)
       if (!res.ok) throw new Error(data.error)
@@ -51,11 +55,18 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <a href="/analyze" style={{ color: '#0891b2', textDecoration: 'none', fontSize: 14 }}>← 返回分析</a>
           <button
-            onClick={handleSync}
+            onClick={() => handleSync()}
             disabled={syncing}
             style={{ background: '#0891b2', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}
           >
-            {syncing ? '同步中...' : '同步 PubMed'}
+            {syncing ? '同步中...' : '同步最新'}
+          </button>
+          <button
+            onClick={() => handleSync(2017)}
+            disabled={syncing}
+            style={{ background: '#0e7490', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}
+          >
+            抓取历史(2017-2024)
           </button>
         </div>
       </div>
