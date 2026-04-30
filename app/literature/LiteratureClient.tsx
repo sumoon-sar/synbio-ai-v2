@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import LiteratureUpload from '@/components/LiteratureUpload'
 
 type Paper = {
@@ -12,12 +13,39 @@ type Paper = {
   literature_extractions: { host_organism: string | null; titer_mg_per_l: number | null; key_finding: string | null }[]
 }
 
-export default function LiteratureClient({ papers: initial }: { papers: Paper[] }) {
+export default function LiteratureClient({ papers: initial, page, totalPages, total }: { papers: Paper[]; page: number; totalPages: number; total: number }) {
+  const router = useRouter()
   const [papers, setPapers] = useState(initial)
   const [syncing, setSyncing] = useState(false)
   const [syncProgress, setSyncProgress] = useState(0)
+  const [extracting, setExtracting] = useState(false)
+  const [extractMsg, setExtractMsg] = useState('')
   const [msg, setMsg] = useState('')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  async function handleExtract() {
+    setExtracting(true)
+    setExtractMsg('提取中...')
+    try {
+      let remaining = 1
+      let total = 0
+      while (remaining > 0) {
+        const res = await fetch('/api/literature/extract', { method: 'POST' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+        total += data.processed
+        remaining = data.remaining
+        setExtractMsg(`已提取 ${total} 篇，剩余 ${remaining} 篇...`)
+        if (remaining > 0) await new Promise(r => setTimeout(r, 500))
+      }
+      setExtractMsg(`提取完成，共处理 ${total} 篇`)
+      setTimeout(() => window.location.reload(), 800)
+    } catch (e: any) {
+      setExtractMsg(`失败：${e.message}`)
+    } finally {
+      setExtracting(false)
+    }
+  }
 
   async function handleSync(minYear?: number) {
     setSyncing(true)
@@ -68,8 +96,17 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
           >
             抓取历史(2017-2024)
           </button>
+          <button
+            onClick={handleExtract}
+            disabled={extracting || syncing}
+            style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}
+          >
+            {extracting ? '提取中...' : '提取AI数据'}
+          </button>
         </div>
       </div>
+
+      {extractMsg && <p style={{ color: '#64748b', marginBottom: 8 }}>{extractMsg}</p>}
 
       {syncing && (
         <div style={{ marginBottom: 16 }}>
@@ -90,7 +127,7 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
         <LiteratureUpload onDone={() => window.location.reload()} />
       </div>
 
-      <h2 style={{ color: '#0e7490', marginBottom: 12 }}>已收录文献（{papers.length} 篇）</h2>
+      <h2 style={{ color: '#0e7490', marginBottom: 12 }}>已收录文献（共 {total} 篇）</h2>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ background: '#f0f9ff' }}>
@@ -120,6 +157,22 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
           })}
         </tbody>
       </table>
+
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 24 }}>
+          <button
+            onClick={() => router.push(`/literature?page=${page - 1}`)}
+            disabled={page <= 1}
+            style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #e2e8f0', cursor: page <= 1 ? 'not-allowed' : 'pointer', background: '#fff' }}
+          >上一页</button>
+          <span style={{ fontSize: 14, color: '#64748b' }}>第 {page} / {totalPages} 页</span>
+          <button
+            onClick={() => router.push(`/literature?page=${page + 1}`)}
+            disabled={page >= totalPages}
+            style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #e2e8f0', cursor: page >= totalPages ? 'not-allowed' : 'pointer', background: '#fff' }}
+          >下一页</button>
+        </div>
+      )}
     </div>
   )
 }

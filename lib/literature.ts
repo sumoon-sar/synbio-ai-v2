@@ -60,6 +60,10 @@ ${text.slice(0, 3000)}
 
   try {
     const extracted = await callDeepSeekJson(prompt)
+    const hasGenes = (extracted.genes_overexpressed?.length ?? 0) > 0 ||
+      (extracted.genes_knocked_out?.length ?? 0) > 0 ||
+      (extracted.heterologous_genes?.length ?? 0) > 0
+    if (!extracted.titer_mg_per_l && !hasGenes) return
     const db = getDb()
     await db.from('literature_extractions').upsert({
       paper_id: paperId,
@@ -76,7 +80,7 @@ ${text.slice(0, 3000)}
 
 export async function syncPubMedLiterature(molecule = 'ergothioneine', minYear?: number): Promise<number> {
   const yearFilter = minYear ? ` AND ${minYear}:3000[pdat]` : ''
-  const query = `${molecule} AND (biosynthesis OR "metabolic engineering" OR "microbial production" OR "fermentation" OR "yield improvement") AND (bacteria OR yeast OR "E. coli" OR "Escherichia coli" OR "Saccharomyces" OR "Bacillus" OR "Corynebacterium" OR "Yarrowia")${yearFilter}`
+  const query = `${molecule} AND (biosynthesis OR "metabolic engineering" OR "microbial production" OR "fermentation" OR "yield improvement") AND (bacteria OR yeast OR "E. coli" OR "Escherichia coli" OR "Saccharomyces" OR "Bacillus" OR "Corynebacterium" OR "Yarrowia") NOT (clinical[tiab] OR "clinical trial"[pt] OR "gut microbiota"[tiab] OR "cognitive"[tiab] OR neuroprotect[tiab] OR "food"[tiab] OR dietary[tiab] OR "gut-brain"[tiab] OR microbiome[tiab])${yearFilter}`
   const searchRes = await fetch(
     `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmax=100&retmode=json`,
     { signal: AbortSignal.timeout(10000) }
@@ -103,6 +107,8 @@ export async function syncPubMedLiterature(molecule = 'ergothioneine', minYear?:
     if (existing) continue
 
     const abstract = await fetchAbstract(pmid)
+    const relevant = /overexpres|knock.?out|biosynthes|titer|yield|mg\/L|g\/L|metabolic engineer|pathway|ferment/i.test(abstract)
+    if (!relevant) continue
     const { data: paper } = await db.from('literature_papers').insert({
       pmid,
       title: s.title ?? '',
@@ -115,10 +121,7 @@ export async function syncPubMedLiterature(molecule = 'ergothioneine', minYear?:
       molecule,
     }).select('id').single()
 
-    if (paper?.id && abstract) {
-      await extractAndStore(paper.id, abstract)
-    }
-    added++
+    if (paper?.id) added++
   }
 
   return added
@@ -144,8 +147,10 @@ export async function queryLiteratureContext(molecule: string, host: string): Pr
       literature_papers!inner(title, year, molecule)
     `)
     .ilike('literature_papers.molecule', `%${molecule.split(' ')[0]}%`)
+    .or(`host_organism.ilike.%${host.split(' ')[0]}%,host_organism.is.null`)
+    .or('titer_mg_per_l.not.is.null,genes_overexpressed.neq.{}')
     .order('titer_mg_per_l', { ascending: false })
-    .limit(5)
+    .limit(10)
 
   if (!data) return []
 
