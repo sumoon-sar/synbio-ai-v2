@@ -45,6 +45,7 @@ export default function AnalyzeClient({ user, history }: Props) {
           <span className="font-bold text-gray-900">SynBio AI</span>
         </div>
         <div className="flex items-center gap-4">
+          <a href="/literature" className="text-sm text-cyan-600 hover:underline">文献库</a>
           <span className="text-sm text-gray-500">{user.email}</span>
           <button onClick={handleLogout} className="text-sm text-red-500 hover:underline">登出</button>
         </div>
