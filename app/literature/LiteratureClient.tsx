@@ -18,27 +18,25 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
   const [msg, setMsg] = useState('')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
-    if (!syncing) { setSyncProgress(0); return }
-    let pct = 0
-    timerRef.current = setInterval(() => {
-      pct += 100 / (90000 / 500)
-      setSyncProgress(Math.min(pct, 90))
-    }, 500)
-    return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [syncing])
-
   async function handleSync() {
     setSyncing(true)
+    setSyncProgress(0)
     setMsg('')
+    let pct = 0
+    timerRef.current = setInterval(() => {
+      pct = Math.min(pct + 0.5, 90)
+      setSyncProgress(pct)
+    }, 400)
     try {
       const res = await fetch('/api/literature/sync', { method: 'POST' })
       const data = await res.json()
+      if (timerRef.current) clearInterval(timerRef.current)
       if (!res.ok) throw new Error(data.error)
       setSyncProgress(100)
       setMsg(`新增 ${data.added} 篇文献`)
       setTimeout(() => window.location.reload(), 500)
     } catch (e: any) {
+      if (timerRef.current) clearInterval(timerRef.current)
       setMsg(`失败：${e.message}`)
     } finally {
       setSyncing(false)
