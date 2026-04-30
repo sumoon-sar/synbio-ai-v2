@@ -8,6 +8,7 @@ type Paper = {
   year: number | null
   journal: string | null
   source: string
+  pmid: string | null
   literature_extractions: { host_organism: string | null; titer_mg_per_l: number | null; key_finding: string | null }[]
 }
 
@@ -94,7 +95,11 @@ export default function LiteratureClient({ papers: initial }: { papers: Paper[] 
             const ext = p.literature_extractions?.[0]
             return (
               <tr key={p.id}>
-                <td style={td}>{p.title}</td>
+                <td style={td}>
+                  {p.pmid
+                    ? <a href={`https://pubmed.ncbi.nlm.nih.gov/${p.pmid}/`} target="_blank" rel="noreferrer" style={{ color: '#0891b2' }}>{p.title}</a>
+                    : p.title}
+                </td>
                 <td style={td}>{p.year ?? '—'}</td>
                 <td style={td}>{ext?.host_organism ?? '—'}</td>
                 <td style={td}>{ext?.titer_mg_per_l ?? '—'}</td>
